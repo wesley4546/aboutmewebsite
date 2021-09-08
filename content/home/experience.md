@@ -18,27 +18,33 @@ date_format = "Jan 2006"
 #   Leave `date_end` empty if it's your current employer.
 #   Begin/end multi-line descriptions with 3 quotes `"""`.
 [[experience]]
-  title = "CEO"
-  company = "GenCoin"
+  title = "Graduate Teaching Assistant"
+  company = "University of South Florida"
   company_url = ""
-  location = "California"
-  date_start = "2017-01-01"
+  location = "Florida"
+  date_start = "2021-08-09"
   date_end = ""
   description = """
-  Responsibilities include:
-  
-  * Analysing
-  * Modelling
-  * Deploying
+  Held lab section for students in Introduction to Psychological Sciences where we 
+  went over class material with supplementary activities
   """
 
 [[experience]]
-  title = "Professor"
-  company = "University X"
+  title = "Undergraduate Search Assistant"
+  company = "University of South Florida"
   company_url = ""
-  location = "California"
-  date_start = "2016-01-01"
-  date_end = "2016-12-31"
-  description = """Taught electronic engineering and researched semiconductor physics."""
+  location = "Florida"
+  date_start = "2019-04"
+  date_end = "2021-06"
+  description = """
+  Dr. Loni Hagen's Big Data research lab:
+  - Interact with different API's from different websites (Twitter, Youtube, Facebook)
+  - Topic Modeling of Tweet's/Text data
+  - Work with USF's Cluster Computing system
+  
+  Dr. Tammy Allen's Work/Family Conflict lab:
+  - Transcribe audio recordings
+  - Qualitativly code participant's responses
+  """
 
 +++
