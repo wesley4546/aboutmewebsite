@@ -10,7 +10,7 @@ authors:
 superuser: true
 
 # Role/position
-role: Gradute Student
+role: Graduate Student
 
 # Organizations/Affiliations
 organizations:
@@ -22,8 +22,10 @@ bio: My primary research interests include personality, teams/teamwork, and lead
 
 interests:
 - Personality
+- Psychometrics
 - Team/Teamwork
 - Leadership
+
 
 education:
   courses:
@@ -41,7 +43,7 @@ education:
 social:
 - icon: envelope
   icon_pack: fas
-  link: '#contact'  # For a direct email link, use "mailto:test@example.org".
+  link: 'mailto:wesley.gardiner4546@gmail.com'  # For a direct email link, use "mailto:test@example.org".
 - icon: twitter
   icon_pack: fab
   link: https://twitter.com/wesley4546
@@ -64,4 +66,4 @@ user_groups:
 - Visitors
 ---
 
-Wesley Gardiner is graduate student at the University of South Florida studying I-O Psychology. His research interests include personalities in the workplace, teamwork and team dynamics. He currently is working with Dr. Brenton Wiernik in his research lab.
+I am a graduate student at the University of South Florida studying I-O Psychology. My research interests include personalities in the workplace, teamwork and team dynamics. I currently work with Dr. Brenton Wiernik in his research lab.
