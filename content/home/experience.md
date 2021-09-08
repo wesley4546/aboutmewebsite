@@ -30,7 +30,7 @@ date_format = "Jan 2006"
   """
 
 [[experience]]
-  title = "Undergraduate Search Assistant"
+  title = "Undergraduate Research Assistant"
   company = "University of South Florida"
   company_url = ""
   location = "Florida"
