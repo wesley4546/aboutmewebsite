@@ -34,8 +34,8 @@ date_format = "Jan 2006"
   company = "University of South Florida"
   company_url = ""
   location = "Florida"
-  date_start = "2019-04"
-  date_end = "2021-06"
+  date_start = "2019-04-01"
+  date_end = "2021-06-01"
   description = """
   Dr. Loni Hagen's Big Data research lab:
   - Interact with different API's from different websites (Twitter, Youtube, Facebook)
