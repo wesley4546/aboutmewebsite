@@ -1,0 +1,841 @@
+---
+title: "Grocery Shopping & Personality"
+author: "Wesley Gardiner"
+date: "9/8/2021"
+output: html_document
+---
+
+<script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
+
+
+<p>If you’re a data fanatic like me, I like to look at <a href="kaggle.com">Kaggle</a> for different data sets that I can have fun with in my free time. Since starting Grad school I’ve already learned a whole bunch of great information on regression, psychometric reliability/validity, and getting aquinted with the literature. However, this post is going to be using an analysis I learned in Undergrad called the “Market Basket Analysis” (MB)</p>
+<p>I encountered MB Analysis in my Intro to Data and Text Mining class and ever since then I’ve been trying to find ways to implement it within things I’m interested in.</p>
+<p>There’s an old saying:</p>
+<blockquote>
+<p>“When you have a hammer, everything looks like a nail.”
+- Unknown</p>
+</blockquote>
+<p>This is very much my experience with MB analysis. I thought it was a really practical analysis.</p>
+<p>Let’s first dive into the under the hood of MB analysis</p>
+<div id="market-basket-analysis-mb-or-association-rules" class="section level2">
+<h2>Market Basket Analysis (MB) or Association Rules</h2>
+<p>One question you might be asking is: “Wesley, why do they call it the ‘Market Basket’ analysis?” Great question!</p>
+<p>If we think of a market basket (or shopping cart) we have different items that we purchase throughout our visit to the store.</p>
+<p><strong><em>The main purpose of a MB analysis is to look at which items are bought together. In other words, find the association between items within a transaction.</em></strong></p>
+<p>We use association rules to mine different “if, then” statements from our data.</p>
+<p>Let’s look at an example:</p>
+<p>Say I have a data set in which cheese and wine are both bought together. Our algorithm will make a proposition like:</p>
+<p><code>{Wine} =&gt; {Cheese}</code></p>
+<p>There are 3 main types of metrics used to evaluate a proposition:</p>
+<ul>
+<li>Support</li>
+<li>Confidence</li>
+<li>Lift</li>
+</ul>
+<div id="support" class="section level3">
+<h3>Support</h3>
+<p><strong>Support</strong> is how much an item appears in the data set.</p>
+<p>If <code>{Wine}</code> has a support of 0.2, that means it occurs 20% of transactions (or shopping carts)</p>
+<p>Formula:</p>
+<p><img src="/post/2021-09-08-arules_mining/arules_mining_files/support.PNG" /></p>
+</div>
+<div id="confidence" class="section level3">
+<h3>Confidence</h3>
+<p><strong>Confidence</strong> is how often the rule is true.</p>
+<p>If <code>{Wine} =&gt; {Cheese}</code> has a confidence of 0.5, that means it has been true in 50% of the shopping carts (or transactions).</p>
+<p>Formula:</p>
+<p><img src="/post/2021-09-08-arules_mining/arules_mining_files/confidence.PNG" /></p>
+</div>
+<div id="lift" class="section level3">
+<h3>Lift</h3>
+<p><strong>Lift</strong> is the ratio of the support to the independence of the item(s).</p>
+<p>If <code>{Wine} =&gt; {Cheese}</code> has a lift of 2.5, that means it occurs 2.5 times more than if people were to just buy <code>{Wine}</code> itself.</p>
+<p>Formula:</p>
+<p><img src="/post/2021-09-08-arules_mining/arules_mining_files/lift.PNG" /></p>
+</div>
+</div>
+<div id="what-does-this-have-to-do-with-personality" class="section level2">
+<h2>What does this have to do with personality?</h2>
+<p>Good question!</p>
+<p>Kaggle has a data set of the <a href="https://www.kaggle.com/tunguz/big-five-personality-test">Big Five Personality Test</a> that has ~ 1 million responses to 50 questions (10 per trait).</p>
+<p>Let’s take a step back and abstract MB &amp; the BFI Personality test.</p>
+<p>Imagine we are in a shopping plaza. There are 5 stores, each for the different personality traits. (Extraversion store, Openness store, …)</p>
+<p>I go to the Extraversion store and go through the 10 different aisles and pick out 1 unique item per aisle.</p>
+<p>We can use MB analysis to look at my shopping cart for each store I go to.</p>
+</div>
+<div id="lets-start-coding" class="section level2">
+<h2>Let’s start coding</h2>
+<pre class="r"><code>library(arules) # Association Rules
+library(dplyr)</code></pre>
+<p>Load in data:</p>
+<p>(I sampled the original data set for the purpose of this post; <code>n = 1000</code>)</p>
+<pre class="r"><code>sampled_data &lt;- readr::read_csv(
+  here::here(
+    &quot;content&quot;,
+    &quot;post&quot;,
+    &quot;2021-09-08-arules_mining&quot;,
+    &quot;sampled_data.csv&quot;
+  )
+)</code></pre>
+<p>Taking a look at our data:</p>
+<pre class="r"><code>knitr::kable(head(sampled_data))</code></pre>
+<table style="width:100%;">
+<colgroup>
+<col width="2%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="2%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="2%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="2%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="2%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="1%" />
+<col width="2%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="right">id</th>
+<th align="right">EXT1</th>
+<th align="right">EXT2</th>
+<th align="right">EXT3</th>
+<th align="right">EXT4</th>
+<th align="right">EXT5</th>
+<th align="right">EXT6</th>
+<th align="right">EXT7</th>
+<th align="right">EXT8</th>
+<th align="right">EXT9</th>
+<th align="right">EXT10</th>
+<th align="right">EST1</th>
+<th align="right">EST2</th>
+<th align="right">EST3</th>
+<th align="right">EST4</th>
+<th align="right">EST5</th>
+<th align="right">EST6</th>
+<th align="right">EST7</th>
+<th align="right">EST8</th>
+<th align="right">EST9</th>
+<th align="right">EST10</th>
+<th align="right">AGR1</th>
+<th align="right">AGR2</th>
+<th align="right">AGR3</th>
+<th align="right">AGR4</th>
+<th align="right">AGR5</th>
+<th align="right">AGR6</th>
+<th align="right">AGR7</th>
+<th align="right">AGR8</th>
+<th align="right">AGR9</th>
+<th align="right">AGR10</th>
+<th align="right">CSN1</th>
+<th align="right">CSN2</th>
+<th align="right">CSN3</th>
+<th align="right">CSN4</th>
+<th align="right">CSN5</th>
+<th align="right">CSN6</th>
+<th align="right">CSN7</th>
+<th align="right">CSN8</th>
+<th align="right">CSN9</th>
+<th align="right">CSN10</th>
+<th align="right">OPN1</th>
+<th align="right">OPN2</th>
+<th align="right">OPN3</th>
+<th align="right">OPN4</th>
+<th align="right">OPN5</th>
+<th align="right">OPN6</th>
+<th align="right">OPN7</th>
+<th align="right">OPN8</th>
+<th align="right">OPN9</th>
+<th align="right">OPN10</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">664928</td>
+<td align="right">3</td>
+<td align="right">2</td>
+<td align="right">4</td>
+<td align="right">2</td>
+<td align="right">3</td>
+<td align="right">2</td>
+<td align="right">3</td>
+<td align="right">2</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">2</td>
+<td align="right">4</td>
+<td align="right">3</td>
+<td align="right">2</td>
+<td align="right">4</td>
+<td align="right">3</td>
+<td align="right">2</td>
+<td align="right">2</td>
+<td align="right">2</td>
+<td align="right">2</td>
+<td align="right">2</td>
+<td align="right">4</td>
+<td align="right">1</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">4</td>
+<td align="right">2</td>
+<td align="right">4</td>
+<td align="right">4</td>
+<td align="right">4</td>
+<td align="right">3</td>
+<td align="right">2</td>
+<td align="right">3</td>
+<td align="right">2</td>
+<td align="right">3</td>
+<td align="right">2</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">4</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">2</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">4</td>
+<td align="right">1</td>
+<td align="right">4</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">4</td>
+</tr>
+<tr class="even">
+<td align="right">814515</td>
+<td align="right">3</td>
+<td align="right">1</td>
+<td align="right">5</td>
+<td align="right">2</td>
+<td align="right">4</td>
+<td align="right">1</td>
+<td align="right">4</td>
+<td align="right">2</td>
+<td align="right">5</td>
+<td align="right">2</td>
+<td align="right">4</td>
+<td align="right">4</td>
+<td align="right">2</td>
+<td align="right">3</td>
+<td align="right">2</td>
+<td align="right">3</td>
+<td align="right">4</td>
+<td align="right">4</td>
+<td align="right">4</td>
+<td align="right">3</td>
+<td align="right">2</td>
+<td align="right">4</td>
+<td align="right">1</td>
+<td align="right">2</td>
+<td align="right">3</td>
+<td align="right">5</td>
+<td align="right">2</td>
+<td align="right">4</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">5</td>
+<td align="right">2</td>
+<td align="right">2</td>
+<td align="right">2</td>
+<td align="right">3</td>
+<td align="right">4</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">1</td>
+<td align="right">3</td>
+<td align="right">2</td>
+<td align="right">3</td>
+<td align="right">1</td>
+<td align="right">4</td>
+<td align="right">1</td>
+<td align="right">2</td>
+<td align="right">3</td>
+</tr>
+<tr class="odd">
+<td align="right">911060</td>
+<td align="right">2</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">4</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">4</td>
+<td align="right">2</td>
+<td align="right">4</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">4</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">4</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">4</td>
+<td align="right">3</td>
+<td align="right">1</td>
+<td align="right">4</td>
+<td align="right">2</td>
+<td align="right">5</td>
+<td align="right">2</td>
+<td align="right">4</td>
+<td align="right">2</td>
+<td align="right">4</td>
+<td align="right">4</td>
+<td align="right">3</td>
+<td align="right">4</td>
+<td align="right">1</td>
+<td align="right">4</td>
+<td align="right">2</td>
+<td align="right">4</td>
+<td align="right">2</td>
+<td align="right">4</td>
+<td align="right">3</td>
+<td align="right">4</td>
+<td align="right">4</td>
+<td align="right">3</td>
+<td align="right">4</td>
+<td align="right">2</td>
+<td align="right">1</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">2</td>
+</tr>
+<tr class="even">
+<td align="right">358416</td>
+<td align="right">3</td>
+<td align="right">2</td>
+<td align="right">2</td>
+<td align="right">4</td>
+<td align="right">2</td>
+<td align="right">2</td>
+<td align="right">2</td>
+<td align="right">3</td>
+<td align="right">2</td>
+<td align="right">3</td>
+<td align="right">4</td>
+<td align="right">3</td>
+<td align="right">4</td>
+<td align="right">1</td>
+<td align="right">4</td>
+<td align="right">4</td>
+<td align="right">4</td>
+<td align="right">4</td>
+<td align="right">5</td>
+<td align="right">4</td>
+<td align="right">2</td>
+<td align="right">3</td>
+<td align="right">4</td>
+<td align="right">4</td>
+<td align="right">3</td>
+<td align="right">4</td>
+<td align="right">2</td>
+<td align="right">4</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">2</td>
+<td align="right">3</td>
+<td align="right">2</td>
+<td align="right">2</td>
+<td align="right">4</td>
+<td align="right">4</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">4</td>
+<td align="right">2</td>
+<td align="right">5</td>
+<td align="right">1</td>
+<td align="right">5</td>
+<td align="right">2</td>
+<td align="right">4</td>
+<td align="right">3</td>
+<td align="right">4</td>
+<td align="right">4</td>
+</tr>
+<tr class="odd">
+<td align="right">689863</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">4</td>
+<td align="right">2</td>
+<td align="right">4</td>
+<td align="right">2</td>
+<td align="right">4</td>
+<td align="right">3</td>
+<td align="right">1</td>
+<td align="right">4</td>
+<td align="right">4</td>
+<td align="right">3</td>
+<td align="right">1</td>
+<td align="right">4</td>
+<td align="right">3</td>
+<td align="right">2</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">2</td>
+<td align="right">4</td>
+<td align="right">1</td>
+<td align="right">5</td>
+<td align="right">1</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">4</td>
+<td align="right">5</td>
+<td align="right">4</td>
+<td align="right">5</td>
+<td align="right">2</td>
+<td align="right">4</td>
+<td align="right">1</td>
+<td align="right">1</td>
+<td align="right">2</td>
+<td align="right">4</td>
+<td align="right">3</td>
+<td align="right">5</td>
+<td align="right">5</td>
+<td align="right">3</td>
+<td align="right">4</td>
+<td align="right">3</td>
+<td align="right">2</td>
+<td align="right">3</td>
+<td align="right">4</td>
+<td align="right">5</td>
+<td align="right">3</td>
+<td align="right">4</td>
+<td align="right">2</td>
+</tr>
+<tr class="even">
+<td align="right">648593</td>
+<td align="right">2</td>
+<td align="right">3</td>
+<td align="right">4</td>
+<td align="right">3</td>
+<td align="right">4</td>
+<td align="right">2</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">3</td>
+<td align="right">4</td>
+<td align="right">4</td>
+<td align="right">2</td>
+<td align="right">5</td>
+<td align="right">2</td>
+<td align="right">4</td>
+<td align="right">4</td>
+<td align="right">4</td>
+<td align="right">4</td>
+<td align="right">4</td>
+<td align="right">4</td>
+<td align="right">1</td>
+<td align="right">4</td>
+<td align="right">2</td>
+<td align="right">5</td>
+<td align="right">1</td>
+<td align="right">5</td>
+<td align="right">2</td>
+<td align="right">4</td>
+<td align="right">4</td>
+<td align="right">4</td>
+<td align="right">4</td>
+<td align="right">3</td>
+<td align="right">4</td>
+<td align="right">2</td>
+<td align="right">2</td>
+<td align="right">2</td>
+<td align="right">4</td>
+<td align="right">2</td>
+<td align="right">4</td>
+<td align="right">4</td>
+<td align="right">4</td>
+<td align="right">2</td>
+<td align="right">2</td>
+<td align="right">2</td>
+<td align="right">3</td>
+<td align="right">4</td>
+<td align="right">5</td>
+<td align="right">4</td>
+<td align="right">4</td>
+<td align="right">2</td>
+</tr>
+</tbody>
+</table>
+<div id="reverse-score" class="section level3">
+<h3>Reverse Score</h3>
+<p>Since we are looking at the responses themselves we need to reverse code the negative items.</p>
+<pre class="r"><code>neg_questions &lt;- c(
+  &quot;EXT2&quot;, &quot;EXT4&quot;, &quot;EXT6&quot;, &quot;EXT8&quot;, &quot;EXT10&quot;, # 5
+  &quot;EST2&quot;, &quot;EST4&quot;, # 2
+  &quot;AGR1&quot;, &quot;AGR3&quot;, &quot;AGR5&quot;, &quot;AGR7&quot;, # 4
+  &quot;CSN2&quot;, &quot;CSN4&quot;, &quot;CSN6&quot;, &quot;CSN8&quot;, # 4
+  &quot;OPN2&quot;, &quot;OPN4&quot;, &quot;OPN6&quot; # 3
+)
+
+sampled_datar &lt;-
+  sampled_data |&gt;
+  mutate(across(where(is.numeric), ~ as.character(.x))) |&gt; 
+  mutate(across(all_of(neg_questions), ~ dplyr::recode(.x,
+                                                       &quot;5&quot; = &quot;1&quot;,
+                                                       &quot;4&quot; = &quot;2&quot;,
+                                                       &quot;3&quot; = &quot;3&quot;,
+                                                       &quot;2&quot; = &quot;4&quot;,
+                                                       &quot;1&quot; = &quot;5&quot;)))</code></pre>
+</div>
+<div id="careless-responses" class="section level3">
+<h3>Careless Responses</h3>
+<p>When looking at psychometric data it is usually a good idea to implement some sort of removal of careless responses. To do that we can implement 2 simple methods: Long-String and Intra-individual response variability (IRV).</p>
+<pre class="r"><code>find_longeststring &lt;- function(row_of_data){
+  
+  dat_rle &lt;- rle(row_of_data)
+  longest_string &lt;- max(dat_rle$lengths)
+  
+  return(longest_string)
+}
+
+find_longstring_avg &lt;- function(row_of_data){
+  
+  dat_rle &lt;- rle(row_of_data)
+  longest_string_avg &lt;- mean(dat_rle$lengths)
+  
+  return(longest_string_avg)
+}</code></pre>
+<p>Let’s remove our careless responses</p>
+<pre class="r"><code># Calculate Long-String and IRV
+careless_data &lt;- 
+sampled_datar |&gt; 
+  rowwise() |&gt;
+  mutate(
+    longest_string = find_longeststring(c_across(EXT1:OPN10)),
+    avg_longstring = find_longstring_avg(c_across(EXT1:OPN10)),
+    irv = sd(c_across(EXT1:OPN10))
+  ) |&gt;
+  ungroup() |&gt;
+  mutate(
+    scaled_ls = scale(longest_string),
+    scaled_avg_ls = scale(avg_longstring),
+    scaled_irv = scale(irv)
+  )
+
+## Cut off value of 2 standard deviations
+long_string_excluded &lt;-
+  careless_data |&gt;
+  filter(scaled_ls &lt;= 2) |&gt;
+  filter(scaled_avg_ls &lt;= 2) |&gt;
+  filter(scaled_irv &gt;= -2)</code></pre>
+<p>As we can see we are left with 962 results vs 1000 (removed 3.8%)</p>
+</div>
+<div id="a-little-bit-of-wrangling" class="section level3">
+<h3>A little bit of wrangling</h3>
+<p>Now, one cavet to the algorithm we are going to be using today (the <code>apriori()</code>) is each item needs to be unique in each cart. Not only that, but the function requires a specific format of data.</p>
+<p>To do this I am going to factorize each item as such:</p>
+<ul>
+<li><code>q</code> = question number (1-10)</li>
+<li><code>a</code> = answer (1-5)</li>
+</ul>
+<pre class="r"><code>factorize_item &lt;- function(aisle_number, aisle_item){
+  
+  item_factor &lt;- paste0(&quot;q&quot;, aisle_number,&quot;_&quot; ,&quot;a&quot;, aisle_item)
+  
+  return(item_factor)
+}</code></pre>
+</div>
+</div>
+<div id="the-extraversion-store" class="section level2">
+<h2>The Extraversion Store</h2>
+<pre class="r"><code>ext_store &lt;-
+  long_string_excluded |&gt; 
+  select(EXT1:EXT10) 
+
+# Since I was working with sample data
+# I noticed sometimes I would get &quot;NULL&quot;
+# values, so if you run into that in your
+# own analysis:
+ext_store &lt;- 
+  ext_store |&gt; 
+  filter(
+    across(
+      .cols = everything(),
+      .fns = ~ !stringr::str_detect(&quot;NULL&quot;, .x)
+    )
+  )</code></pre>
+<p>Using <code>map_dfr()</code> we can apply to our Extraversion Store.</p>
+<pre class="r"><code>for (i in 1:10) {
+  
+  ext_store[,i] &lt;- purrr::map_dfr(.x = ext_store[,i], ~ factorize_item(i, .x))
+  
+}</code></pre>
+<p>Let’s take a look:</p>
+<pre class="r"><code>knitr::kable(head(ext_store))</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">EXT1</th>
+<th align="left">EXT2</th>
+<th align="left">EXT3</th>
+<th align="left">EXT4</th>
+<th align="left">EXT5</th>
+<th align="left">EXT6</th>
+<th align="left">EXT7</th>
+<th align="left">EXT8</th>
+<th align="left">EXT9</th>
+<th align="left">EXT10</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">q1_a3</td>
+<td align="left">q2_a4</td>
+<td align="left">q3_a4</td>
+<td align="left">q4_a4</td>
+<td align="left">q5_a3</td>
+<td align="left">q6_a4</td>
+<td align="left">q7_a3</td>
+<td align="left">q8_a4</td>
+<td align="left">q9_a3</td>
+<td align="left">q10_a3</td>
+</tr>
+<tr class="even">
+<td align="left">q1_a3</td>
+<td align="left">q2_a5</td>
+<td align="left">q3_a5</td>
+<td align="left">q4_a4</td>
+<td align="left">q5_a4</td>
+<td align="left">q6_a5</td>
+<td align="left">q7_a4</td>
+<td align="left">q8_a4</td>
+<td align="left">q9_a5</td>
+<td align="left">q10_a4</td>
+</tr>
+<tr class="odd">
+<td align="left">q1_a2</td>
+<td align="left">q2_a3</td>
+<td align="left">q3_a3</td>
+<td align="left">q4_a2</td>
+<td align="left">q5_a3</td>
+<td align="left">q6_a3</td>
+<td align="left">q7_a3</td>
+<td align="left">q8_a2</td>
+<td align="left">q9_a2</td>
+<td align="left">q10_a2</td>
+</tr>
+<tr class="even">
+<td align="left">q1_a3</td>
+<td align="left">q2_a4</td>
+<td align="left">q3_a2</td>
+<td align="left">q4_a2</td>
+<td align="left">q5_a2</td>
+<td align="left">q6_a4</td>
+<td align="left">q7_a2</td>
+<td align="left">q8_a3</td>
+<td align="left">q9_a2</td>
+<td align="left">q10_a3</td>
+</tr>
+<tr class="odd">
+<td align="left">q1_a3</td>
+<td align="left">q2_a3</td>
+<td align="left">q3_a3</td>
+<td align="left">q4_a3</td>
+<td align="left">q5_a4</td>
+<td align="left">q6_a4</td>
+<td align="left">q7_a4</td>
+<td align="left">q8_a4</td>
+<td align="left">q9_a4</td>
+<td align="left">q10_a3</td>
+</tr>
+<tr class="even">
+<td align="left">q1_a2</td>
+<td align="left">q2_a3</td>
+<td align="left">q3_a4</td>
+<td align="left">q4_a3</td>
+<td align="left">q5_a4</td>
+<td align="left">q6_a4</td>
+<td align="left">q7_a3</td>
+<td align="left">q8_a3</td>
+<td align="left">q9_a3</td>
+<td align="left">q10_a2</td>
+</tr>
+</tbody>
+</table>
+<p>Now that I have that I just need to combine every row into it’s own basket.</p>
+<pre class="r"><code>ext_store_b &lt;- 
+  ext_store |&gt; 
+  mutate(basket = paste(EXT1,EXT2,EXT3,EXT4,EXT5,
+                        EXT6,EXT7,EXT8,EXT9,EXT10,
+                         sep = &quot;,&quot;))
+
+baskets &lt;-
+  ext_store_b |&gt; 
+  select(basket)</code></pre>
+<p>The <code>apriori()</code> function requires a specific data structure. The code below isn’t pretty but it does the trick!</p>
+<pre class="r"><code>transaction_list &lt;-
+  list()
+
+for (i in seq_along(1:nrow(baskets))) {
+
+  counter &lt;- 1
+  
+  row &lt;- as.character(ext_store[i,])
+  
+  transaction_list[[i]] &lt;- c(row[counter],row[counter+1],row[counter+2],
+                     row[counter+3],row[counter+4],row[counter+5],
+                     row[counter+6],row[counter+7],row[counter+8],
+                     row[counter+9])
+  
+}
+
+names(transaction_list) &lt;- paste(&quot;Tr&quot;,seq_along(1:nrow(ext_store)), sep = &quot;&quot;)
+
+transaction_obj &lt;- transactions(transaction_list)</code></pre>
+<p>Now that we have our data in the right format, we can create our rules.</p>
+<pre class="r"><code>m1 &lt;- apriori(transaction_obj,
+              parameter = list(support = 0.007,
+                               confidence = .95,
+                               minlen = 2))</code></pre>
+<pre><code>## Apriori
+## 
+## Parameter specification:
+##  confidence minval smax arem  aval originalSupport maxtime support minlen
+##        0.95    0.1    1 none FALSE            TRUE       5   0.007      2
+##  maxlen target  ext
+##      10  rules TRUE
+## 
+## Algorithmic control:
+##  filter tree heap memopt load sort verbose
+##     0.1 TRUE TRUE  FALSE TRUE    2    TRUE
+## 
+## Absolute minimum support count: 6 
+## 
+## set item appearances ...[0 item(s)] done [0.00s].
+## set transactions ...[50 item(s), 962 transaction(s)] done [0.00s].
+## sorting and recoding items ... [50 item(s)] done [0.00s].
+## creating transaction tree ... done [0.00s].
+## checking subsets of size 1 2 3 4 5 6 7 8 9 done [0.01s].
+## writing ... [1470 rule(s)] done [0.00s].
+## creating S4 object  ... done [0.00s].</code></pre>
+<pre class="r"><code>rules_df &lt;- DATAFRAME(m1) |&gt; 
+  mutate(LHS = as.character(LHS),
+         RHS = as.character(RHS))</code></pre>
+<p>Let’s look at the results</p>
+<pre class="r"><code>t &lt;- rules_df |&gt; 
+  filter(!stringr::str_detect(RHS, &quot;a1&quot;)) |&gt; 
+  filter(!stringr::str_detect(RHS, &quot;a5&quot;))
+knitr::kable(head(t))</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">LHS</th>
+<th align="left">RHS</th>
+<th align="right">support</th>
+<th align="right">confidence</th>
+<th align="right">coverage</th>
+<th align="right">lift</th>
+<th align="right">count</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">{q10_a4,q4_a3,q7_a4}</td>
+<td align="left">{q5_a4}</td>
+<td align="right">0.0083160</td>
+<td align="right">1</td>
+<td align="right">0.0083160</td>
+<td align="right">3.498182</td>
+<td align="right">8</td>
+</tr>
+<tr class="even">
+<td align="left">{q10_a4,q3_a5,q7_a2}</td>
+<td align="left">{q1_a3}</td>
+<td align="right">0.0083160</td>
+<td align="right">1</td>
+<td align="right">0.0083160</td>
+<td align="right">3.460432</td>
+<td align="right">8</td>
+</tr>
+<tr class="odd">
+<td align="left">{q1_a4,q2_a3,q5_a3}</td>
+<td align="left">{q4_a3}</td>
+<td align="right">0.0072765</td>
+<td align="right">1</td>
+<td align="right">0.0072765</td>
+<td align="right">3.894737</td>
+<td align="right">7</td>
+</tr>
+<tr class="even">
+<td align="left">{q10_a3,q2_a2,q6_a4}</td>
+<td align="left">{q3_a4}</td>
+<td align="right">0.0072765</td>
+<td align="right">1</td>
+<td align="right">0.0072765</td>
+<td align="right">3.657795</td>
+<td align="right">7</td>
+</tr>
+<tr class="odd">
+<td align="left">{q2_a2,q7_a1,q9_a4}</td>
+<td align="left">{q4_a2}</td>
+<td align="right">0.0072765</td>
+<td align="right">1</td>
+<td align="right">0.0072765</td>
+<td align="right">3.772549</td>
+<td align="right">7</td>
+</tr>
+<tr class="even">
+<td align="left">{q3_a2,q5_a4,q8_a2}</td>
+<td align="left">{q4_a2}</td>
+<td align="right">0.0072765</td>
+<td align="right">1</td>
+<td align="right">0.0072765</td>
+<td align="right">3.772549</td>
+<td align="right">7</td>
+</tr>
+</tbody>
+</table>
+</div>
