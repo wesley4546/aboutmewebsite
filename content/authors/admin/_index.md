@@ -10,7 +10,7 @@ authors:
 superuser: true
 
 # Role/position
-role: Graduate Student
+role: I-O Psychology Graduate Student
 
 # Organizations/Affiliations
 organizations:
@@ -18,7 +18,7 @@ organizations:
   url: "www.usf.edu"
 
 # Short bio (displayed in user profile at end of posts)
-bio: My primary research interests include personality, teams/teamwork, and leadership.
+bio: My primary research interests include personality, psychometrics, and teams.
 
 interests:
 - Personality
