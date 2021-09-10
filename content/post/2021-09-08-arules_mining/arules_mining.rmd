@@ -310,3 +310,6 @@ t <- rules_df |>
 knitr::kable(head(t))
 ```
 
+# References
+
+Saltz, J. S., & Stanton, J. M. (2018). An introduction to data science (First edition). SAGE.
