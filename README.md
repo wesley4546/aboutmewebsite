@@ -1,4 +1,4 @@
-<p align="center"><a href="https://sourcethemes.com/academic/" target="_blank" rel="noopener"><img src="https://sourcethemes.com/academic/img/logo_200px.png" alt="Academic logo"></a></p>
+[![Netlify Status](https://api.netlify.com/api/v1/badges/65392e32-b82f-4e69-85bf-a12361385e38/deploy-status)](https://app.netlify.com/sites/wgardiner/deploys)
 
 # Academic Kickstart: The Template for [Academic Website Builder](https://sourcethemes.com/academic/)
 
