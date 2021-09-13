@@ -24,7 +24,7 @@ After using python to interact with Spotify (see [Github](https://github.com/wes
 ```{r message=FALSE}
 filepath_to_data <- here::here("content",
                                "post",
-                               "2021-09-09-spotify-yearly-playlist",
+                               "2021-09-09-spotify_yearly_playlist",
                                "data")
 
 playlist_2016 <- read_csv(here::here(filepath_to_data,

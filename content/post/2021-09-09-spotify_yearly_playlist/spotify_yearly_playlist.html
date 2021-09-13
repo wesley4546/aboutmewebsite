@@ -1,0 +1,233 @@
+---
+title: "Spotify Top 100 Yearly Playlist Analysis"
+author: "Wesley Gardiner"
+date: "9/9/2021"
+output: html_document
+---
+
+<script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
+
+
+<div id="wesley-why" class="section level2">
+<h2>Wesley, Why?</h2>
+<p>Every year Spotify comes out with our top 100 songs. Since I’ve been using Spotify from some time now, I have a couple playlists built up. I always wondered how my music taste has changed throughout the years. Wielding Spotify’s API and being able to access different <a href="https://benanne.github.io/2014/08/05/spotify-cnns.html">Audio Features</a> I thought it might be worth checking out.</p>
+<p>Check out the <a href="https://github.com/wesley4546/spotify_playlist_analysis">GitHub repo</a></p>
+<pre class="r"><code>library(tidyverse)
+library(ggdist) # Nice visualizations
+library(patchwork) # Easy plot combinations</code></pre>
+<p>After using python to interact with Spotify (see <a href="https://github.com/wesley4546/spotify_playlist_analysis/blob/main/spotifyapi.py">Github</a>) I downloaded my data and <a href="https://github.com/wesley4546/spotify_playlist_analysis/blob/main/cleaning_script.R">cleaned it up.</a></p>
+</div>
+<div id="lets-start-coding" class="section level2">
+<h2>Let’s start coding</h2>
+<pre class="r"><code>filepath_to_data &lt;- here::here(&quot;content&quot;,
+                               &quot;post&quot;,
+                               &quot;2021-09-09-spotify_yearly_playlist&quot;,
+                               &quot;data&quot;)
+
+playlist_2016 &lt;- read_csv(here::here(filepath_to_data,
+                                     &quot;clean_2016_playlist.csv&quot;))
+playlist_2017 &lt;- read_csv(here::here(filepath_to_data,
+                                     &quot;clean_2017_playlist.csv&quot;))
+playlist_2018 &lt;- read_csv(here::here(filepath_to_data,
+                                     &quot;clean_2018_playlist.csv&quot;))
+playlist_2019 &lt;- read_csv(here::here(filepath_to_data,
+                                     &quot;clean_2019_playlist.csv&quot;))
+playlist_2020 &lt;- read_csv(here::here(filepath_to_data,
+                                     &quot;clean_2020_playlist.csv&quot;))</code></pre>
+<p>Taking a look at one of our dataframes:</p>
+<pre class="r"><code>knitr::kable(head(playlist_2016))</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="right">song</th>
+<th align="left">feature</th>
+<th align="left">score</th>
+<th align="right">playlist</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">1</td>
+<td align="left">danceability</td>
+<td align="left">0.674</td>
+<td align="right">2016</td>
+</tr>
+<tr class="even">
+<td align="right">1</td>
+<td align="left">energy</td>
+<td align="left">0.667</td>
+<td align="right">2016</td>
+</tr>
+<tr class="odd">
+<td align="right">1</td>
+<td align="left">key</td>
+<td align="left">2</td>
+<td align="right">2016</td>
+</tr>
+<tr class="even">
+<td align="right">1</td>
+<td align="left">loudness</td>
+<td align="left">-7.385</td>
+<td align="right">2016</td>
+</tr>
+<tr class="odd">
+<td align="right">1</td>
+<td align="left">mode</td>
+<td align="left">1</td>
+<td align="right">2016</td>
+</tr>
+<tr class="even">
+<td align="right">1</td>
+<td align="left">speechiness</td>
+<td align="left">0.0358</td>
+<td align="right">2016</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="spotifys-audio-features" class="section level2">
+<h2>Spotify’s Audio Features:</h2>
+<p>From <a href="https://developer.spotify.com/documentation/web-api/reference/#objects-index">The Spotify API Documentation</a> we get a description of the different features.</p>
+<ul>
+<li><code>acousticness</code> - A confidence measure from 0.0 to 1.0 of whether the track is acoustic.</li>
+<li><code>danceability</code> - Danceability describes how suitable a track is for dancing based on a combination of musical elements including tempo, rhythm stability, beat strength, and overall regularity. A value of 0.0 is least danceable and 1.0 is most danceable.</li>
+<li><code>duration_ms</code> - The duration of the track in milliseconds.</li>
+<li><code>energy</code> - Energy is a measure from 0.0 to 1.0 and represents a perceptual measure of intensity and activity.</li>
+<li><code>instrulmentalness</code> - Predicts whether a track contains no vocals.</li>
+<li><code>liveness</code> - Detects the presence of an audience in the recording.</li>
+<li><code>loudness</code> - The overall loudness of a track in decibels (dB).</li>
+<li><code>speechiness</code> - Speechiness detects the presence of spoken words in a track.</li>
+<li><code>tempo</code> - The overall estimated tempo of a track in beats per minute (BPM)</li>
+<li><code>valence</code> - A measure from 0.0 to 1.0 describing the musical positiveness conveyed by a track.</li>
+</ul>
+</div>
+<div id="wrangling" class="section level2">
+<h2>Wrangling!</h2>
+<p>Now some of the features are unrelated to what I want to look at so lets remove them</p>
+<pre class="r"><code>bad_features &lt;- c(&quot;type&quot;, &quot;id&quot;, &quot;uri&quot;, &quot;track_href&quot;, &quot;analysis_url&quot;)
+
+all_playlists &lt;-
+  playlist_2020 |&gt;
+  bind_rows(
+    playlist_2019,
+    playlist_2018,
+    playlist_2017,
+    playlist_2016
+  ) |&gt;
+  filter(!(feature %in% bad_features)) |&gt;
+  mutate(score = as.numeric(score)) |&gt;
+  mutate(playlist = as.factor(playlist))</code></pre>
+<p>In order to plot, lets get our data into a wide format</p>
+<pre class="r"><code>wider_all_playlists &lt;-
+  all_playlists |&gt;
+  pivot_wider(
+    names_from = feature,
+    values_from = score
+  )</code></pre>
+</div>
+<div id="plotting" class="section level2">
+<h2>Plotting</h2>
+<pre class="r"><code># Looking at the difference in valence
+wider_all_playlists |&gt;
+  ggplot() +
+  aes(x = valence, fill = playlist) +
+  geom_density(alpha = 0.5) +
+  facet_wrap(~ playlist)</code></pre>
+<p><img src="/post/2021-09-09-spotify_yearly_playlist/spotify_yearly_playlist_files/figure-html/valence_plot-1.png" width="672" /></p>
+<p>Let’s break things down per-year</p>
+<pre class="r"><code># Separating things
+wide_2020 &lt;- wider_all_playlists |&gt; filter(playlist == &quot;2020&quot;)
+wide_2019 &lt;- wider_all_playlists |&gt; filter(playlist == &quot;2019&quot;)
+wide_2018 &lt;- wider_all_playlists |&gt; filter(playlist == &quot;2018&quot;)
+wide_2017 &lt;- wider_all_playlists |&gt; filter(playlist == &quot;2017&quot;)
+wide_2016 &lt;- wider_all_playlists |&gt; filter(playlist == &quot;2016&quot;)</code></pre>
+<p>I want to create a similar graph for each variable so let’s get functional</p>
+<pre class="r"><code>audio_feature_graph &lt;- function(data, audio_feature) {
+
+  # For passing in columns into function
+  feature &lt;- sym(audio_feature)
+
+  plot &lt;- data |&gt;
+    ggplot() +
+    aes(x = !!feature, y = playlist, color = playlist, fill = playlist)
+
+  plot &lt;-
+    plot +
+    stat_slab(
+      size = .5,
+      alpha = .2
+    ) +
+    stat_halfeye(fill = &quot;transparent&quot;)
+
+  plot &lt;-
+    plot +
+    theme_minimal() +
+    labs(y = &quot;&quot;) +
+    theme(
+      legend.position = &quot;none&quot;,
+      plot.title = element_text(hjust = 0.5)
+    )
+
+  return(plot)
+}</code></pre>
+<p>Aaaaaaaaand map!</p>
+<pre class="r"><code>all_audio_features &lt;- c(
+  &quot;danceability&quot;, &quot;energy&quot;, &quot;loudness&quot;, &quot;speechiness&quot;,
+  &quot;acousticness&quot;, &quot;liveness&quot;,
+  &quot;valence&quot;, &quot;tempo&quot;, &quot;duration_ms&quot;
+)
+
+all_plots &lt;- all_audio_features |&gt;
+  map(~ audio_feature_graph(wider_all_playlists, .x))</code></pre>
+<p>Add some description</p>
+<pre class="r"><code>all_plots &lt;-
+  wrap_plots(all_plots) +
+  plot_annotation(
+    title = &quot;Yearly Playlist Summary by Audio Feature&quot;,
+    subtitle = &quot;Distribution of Audio Feature score by yearly &#39;Your top 100 songs 20XX&#39;&quot;,
+    caption = &quot;Data: My account via Spotify&#39;s API&quot;
+  )
+
+all_plots</code></pre>
+<p><img src="/post/2021-09-09-spotify_yearly_playlist/spotify_yearly_playlist_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+</div>
+<div id="using-the-correlation-package" class="section level2">
+<h2>Using the <code>correlation</code> package</h2>
+<p>The <code>correlation</code> package is apart of <code>easystats</code> and allows for easy correlation analysis (go figure)</p>
+<p>Let’s look at a correlation matrix</p>
+<pre class="r"><code>library(correlation)
+library(ggraph)
+
+results &lt;- correlation(
+  wider_all_playlists,
+  select = all_audio_features
+)
+
+corr_matrix &lt;- results |&gt;
+  summary(redundant = TRUE) |&gt;
+  plot() +
+  labs(
+    title = &quot;Correlation Matrix of Audio Features&quot;,
+    caption = &quot;Data: My account via Spotify&#39;s API&quot;
+  )
+corr_matrix</code></pre>
+<p><img src="/post/2021-09-09-spotify_yearly_playlist/spotify_yearly_playlist_files/figure-html/correlation_matrix-1.png" width="672" /></p>
+<p>We can also make a Gaussian Graphical Model (GGM) of our data.</p>
+<pre class="r"><code>ggm_graph &lt;- results |&gt;
+  plot() +
+  geom_node_text(label = all_audio_features, color = &quot;black&quot;) +
+  labs(
+    title = &quot;Gaussian Graphical Model of Audio Features&quot;,
+    caption = &quot;Data: My account via Spotify&#39;s API&quot;
+  )
+ggm_graph</code></pre>
+<p><img src="/post/2021-09-09-spotify_yearly_playlist/spotify_yearly_playlist_files/figure-html/ggm_graph-1.png" width="672" /></p>
+</div>
+<div id="conclusion" class="section level2">
+<h2>Conclusion</h2>
+<p>This was a fun little activity to look at how my music taste has changed over time on Spotify.</p>
+</div>
+<div id="reference" class="section level2">
+<h2>Reference</h2>
+<p>Makowski, D., Ben-Shachar, M. S., Patil, I., &amp; Lüdecke, D. (2019). Methods and Algorithms for Correlation Analysis in R. Journal of Open Source Software, 5(51), 2306. <a href="doi:10.21105/joss.02306" class="uri">doi:10.21105/joss.02306</a></p>
+</div>
